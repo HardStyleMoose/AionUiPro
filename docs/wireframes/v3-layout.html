@@ -34,7 +34,32 @@
     background: var(--bg-body); color: var(--text-primary);
     height: 100vh; overflow: hidden; -webkit-font-smoothing: antialiased;
   }
-  .app { display: flex; height: 100vh; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+
+  .app-body { display: flex; flex: 1; height: 100vh; }
+
+  /* === Sidebar wrapper (Rail + Panel stacked under a shared topbar) === */
+  .sidebar-wrapper {
+    display: flex; flex-direction: column; height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+  }
+  .sidebar-topbar-global {
+    height: 40px; min-height: 40px;
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 16px;
+    -webkit-app-region: drag;
+  }
+  .sidebar-topbar-global .sb-actions {
+    display: flex; gap: 2px; margin-left: auto; -webkit-app-region: no-drag;
+  }
+  .sidebar-topbar-global .sb-btn {
+    width: 26px; height: 26px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted); transition: all var(--transition);
+  }
+  .sidebar-topbar-global .sb-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
+  .sidebar-body { display: flex; flex: 1; min-height: 0; }
 
   /* === Traffic lights (macOS) === */
   .traffic-lights {
@@ -45,14 +70,13 @@
 
   /* === Icon Rail === */
   .icon-rail {
-    width: 56px; min-width: 56px; background: var(--bg-sidebar);
-    border-right: 1px solid var(--border);
+    width: 56px; min-width: 56px;
     display: flex; flex-direction: column; align-items: center;
-    height: 100vh; padding: 0 0 12px;
+    height: 100%; padding: 4px 0 12px;
   }
   .icon-rail .rail-topbar {
-    padding: 12px 0 0; display: flex; flex-direction: column; align-items: center; gap: 4px;
-    -webkit-app-region: drag; width: 100%;
+    padding: 4px 0 0; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    width: 100%;
   }
   .icon-rail .rail-logo {
     width: 34px; height: 34px; border-radius: 10px;
@@ -102,29 +126,19 @@
 
   /* === Sidebar Panel === */
   .sidebar {
-    width: 256px; min-width: 256px; background: var(--bg-sidebar);
-    border-right: 1px solid var(--border);
+    width: 256px; min-width: 256px;
+    border-left: 1px solid var(--border-light);
     display: flex; flex-direction: column;
-    height: 100vh;
+    height: 100%;
   }
 
-  /* Sidebar top bar: traffic lights + nav (moved into sidebar panel) */
+  /* Sidebar panel header (title only, no traffic lights) */
   .sidebar-topbar {
     padding: 12px 16px 0; display: flex; align-items: center; gap: 8px;
-    -webkit-app-region: drag;
   }
   .sidebar-topbar .panel-title {
     font-size: 14px; font-weight: 700; color: var(--text-primary); letter-spacing: -.2px;
   }
-  .sidebar-topbar .sb-actions {
-    display: flex; gap: 2px; margin-left: auto; -webkit-app-region: no-drag;
-  }
-  .sidebar-topbar .sb-btn {
-    width: 26px; height: 26px; border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: var(--text-muted); transition: all var(--transition);
-  }
-  .sidebar-topbar .sb-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
 
   /* Panel content */
   .panel-content { flex: 1; overflow-y: auto; padding: 4px 0; }
@@ -348,7 +362,7 @@
   /* === Main === */
   .main {
     flex: 1; display: flex; flex-direction: column;
-    background: var(--bg-main); overflow: hidden; height: 100vh;
+    background: var(--bg-main); overflow: hidden; height: 100%;
   }
   .home {
     flex: 1; display: flex; flex-direction: column; align-items: center;
@@ -509,11 +523,11 @@
   .add-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
 
   /* === Chat Conversation View === */
-  .chat-view { display: none; flex-direction: row; height: 100vh; flex: 1; }
+  .chat-view { display: none; flex-direction: row; height: 100%; flex: 1; }
   .chat-view.active { display: flex; }
   .home { display: none !important; }
   .home.active { display: flex !important; }
-  .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; height: 100vh; }
+  .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; height: 100%; }
 
   .chat-header {
     display: flex; align-items: center; gap: 12px;
@@ -742,7 +756,7 @@
   .workspace-panel {
     width: 260px; min-width: 260px; border-left: 1px solid var(--border);
     background: var(--bg-sidebar); display: flex; flex-direction: column;
-    font-size: 12px; height: 100vh;
+    font-size: 12px; height: 100%;
   }
   .workspace-panel .wp-header {
     padding: 14px 16px; font-size: 13px; font-weight: 600; color: var(--text-primary);
@@ -1550,13 +1564,28 @@
 
 <div class="app">
 
-  <!-- ===== Sidebar ===== -->
+  <!-- ===== App Body ===== -->
+  <div class="app-body">
+
+  <!-- ===== Sidebar Wrapper (topbar + rail + panel) ===== -->
+  <div class="sidebar-wrapper">
+    <div class="sidebar-topbar-global">
+      <div class="traffic-lights">
+        <span class="tl-red"></span><span class="tl-yellow"></span><span class="tl-green"></span>
+      </div>
+      <div class="sb-actions">
+        <div class="sb-btn" title="切换侧边栏">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        </div>
+        <div class="sb-btn" title="后退">←</div>
+        <div class="sb-btn" title="前进">→</div>
+      </div>
+    </div>
+    <div class="sidebar-body">
+
   <!-- ===== Icon Rail ===== -->
   <div class="icon-rail">
     <div class="rail-topbar">
-      <div class="traffic-lights" style="padding:0 0 0 12px; width:100%;">
-        <span class="tl-red"></span><span class="tl-yellow"></span><span class="tl-green"></span>
-      </div>
       <div class="rail-logo" onclick="showView('home')" title="AionUi · 回到首页">
         <svg viewBox="0 0 80 80" fill="none">
           <path d="M40 20 Q38 22 25 40 Q23 42 26 42 L30 42 Q32 40 40 30 Q48 40 50 42 L54 42 Q57 42 55 40 Q42 22 40 20" fill="white"/>
@@ -1600,10 +1629,6 @@
 
     <div class="sidebar-topbar">
       <span class="panel-title" id="panel-title">工作区</span>
-      <div class="sb-actions">
-        <div class="sb-btn" title="后退">←</div>
-        <div class="sb-btn" title="前进">→</div>
-      </div>
     </div>
 
     <div class="panel-content">
@@ -2002,6 +2027,9 @@
 
     </div>
   </div>
+
+    </div><!-- /.sidebar-body -->
+  </div><!-- /.sidebar-wrapper -->
 
   <!-- ===== Main Content ===== -->
   <div class="main">
@@ -2919,7 +2947,9 @@
 
   </div>
 
-</div>
+  </div><!-- /.app-body -->
+
+</div><!-- /.app -->
 
 <!-- Icon Spec Legend -->
 <div class="spec-legend" id="spec-legend">
