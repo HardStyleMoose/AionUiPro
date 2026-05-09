@@ -1,616 +1,519 @@
-AionUiPro TODO CONTEXT HANDOFF FOR CODEX
-=========================================
+AionUiPro TODO CONTEXT FOR CODEX
+================================
 
-Repository:
-- https://github.com/HardStyleMoose/AionUiPro
+Repository
+----------
+- Repo: https://github.com/HardStyleMoose/AionUiPro
+- Default branch: main
+- Public repository: never commit secrets, local vault data, Docker volumes, .env files, tokens, API keys, or personal machine config.
 
-Purpose of this file:
-- This is a complete handoff from ChatGPT planning work into Codex.
-- Codex should use this as the primary project context file before making changes.
-- The goal is to implement a production-grade AionUiPro desktop integration for Discord, dual Hermes Docker runtimes, fork-safe updates, and clean start/shutdown workflows.
-- Do not treat this as optional notes. Treat it as the implementation contract.
+Purpose
+-------
+This file is the authoritative Codex handoff for the AionUiPro implementation. It replaces older partial notes. Codex must read this before editing code.
 
-Important user direction:
-- Docker is now allowed and desired. The user originally considered avoiding Docker, but changed direction after realizing Docker is needed for persistence, memory, files, skills, repeatable runtime state, and clean service management.
-- Hermes Agent should run from Docker image(s), not directly in WSL.
-- The app should become a desktop control center, not a fragile collection of manual terminals.
-- Do not change the user’s model choices. Add routing, memory boundaries, UI, lifecycle management, and provider settings around the existing models.
-- Keep AionUiPro’s normal functionality intact.
-- The user wants this built into the existing AionUI Desktop app, not as a separate random app.
-- The repo is public. Do not commit secrets, tokens, API keys, .env files, local vault data, local Docker volumes, or personal config.
+Product goal
+------------
+AionUiPro should become a polished desktop AI operations control center that keeps the existing AionUI/Gemini CLI experience intact while adding:
+- Discord bot control inside Settings -> Remote -> Discord.
+- Dual Hermes Docker runtimes: private work agent + public/community Gemma4 bot.
+- Obsidian-compatible memory surfaces with strict work/community separation.
+- Profile-governed local/cloud model routing.
+- Manual llama.cpp Vulkan support for the owner machine.
+- Optional Docker Model Runner backend for compatible profiles.
+- Fork-safe updates from HardStyleMoose/AionUiPro.
+- One-click Start Everything and Save & Exit All workflows.
 
-Current UI observations from screenshots:
---------------------------------------
-1) About page currently shows:
-   - AionUi v1.9.25
-   - Check for updates
-   - Include prerelease/dev builds toggle
-   - Help Documentation
-   - Update Log
-   - Feedback
-   - Bug Report
-   - Contact Me
-   - Official Website
+Non-negotiable constraints
+--------------------------
+- Do not destructively refactor the app.
+- Do not replace Bun, Electron, electron-vite, or electron-builder.
+- Do not rename broad renderer/process/shared roots.
+- Do not remove existing AionUI functionality.
+- Do not change the user’s selected models.
+- Do not silently mutate tune profiles or runtime flags.
+- Do not silently fallback from Vulkan to CUDA or Docker Model Runner.
+- Do not mount private work paths into community runtimes.
+- Do not commit secrets or generated runtime data.
 
-2) Remote settings page already exists and already has platform panels:
-   - Telegram is implemented.
-   - Lark exists.
-   - DingTalk exists.
-   - WeChat exists.
-   - WeCom exists.
-   - Slack is shown as Coming Soon.
-   - Discord is shown as Coming Soon.
+Owner machine rule
+------------------
+Owner profile is Windows + RTX 2060 Super 8 GB. The owner default llama.cpp backend must be manual Vulkan, not CUDA.
 
-3) Telegram panel pattern to copy:
-   - Enable toggle.
-   - Bot Token password field with Test button.
-   - Agent selector.
-   - Default Model selector.
-   - Authorized Users list.
-   - Refresh authorized users action.
-   - Delete/remove user button.
+Required owner behavior:
+- Default backend: manual-vulkan.
+- CUDA may exist for other users, but not as silent fallback for the owner profile.
+- Docker Model Runner is optional only; it must not replace owner manual Vulkan on Windows.
+- If Vulkan validation fails, block launch with a clear error.
+- Owner fallback list defaults to empty.
 
-Critical UI instruction:
-- Do not create a separate disconnected Discord settings page as the final product.
-- Implement Discord inside the existing Settings -> Remote -> Discord accordion/panel by copying Telegram’s style and extending it with Discord-specific fields.
+Runtime profile model
+---------------------
+All model starts must use a saved tune profile.
 
-Primary product vision:
------------------------
-AionUiPro Desktop becomes the control center for:
-- The existing AionUI/Gemini CLI workflows.
-- A public/community Discord bot named/treated as the Gemma4 Community Bot.
-- A private owner-only Hermes Work Agent.
-- Dual Hermes Docker runtimes with separated persistent memory and skills.
-- Obsidian-compatible memory vaults.
-- Local/cloud provider routing while preserving the user’s existing model choices.
-- Easy one-click Start Everything and Save & Exit All flows.
-- Fork-safe updating from HardStyleMoose/AionUiPro, not upstream iOfficeAI/AionUi.
+Core fields:
+- id
+- name
+- scope: private | community | shared | imported
+- status: active | last_known_good | candidate | experimental | broken | archived
+- ownerDefault: boolean
+- backend: manual-vulkan | docker-model-runner | manual-cpu | remote-openai-compatible
+- requireBackend: vulkan | cpu | none
+- allowFallbackBackends: explicit list only
+- binaryPath
+- modelPath
+- modelAlias
+- port
+- ctxSize
+- gpuLayers
+- batchSize
+- ubatchSize
+- threads
+- temperature
+- topP
+- topK
+- repeatPenalty
+- maxTokens
+- extraArgs
+- resource policy
+- observations: tokens/sec, RAM, VRAM, last benchmark, stability notes
 
-High-level architecture:
+Rules:
+- No saved profile = no launch.
+- Missing model path = block launch.
+- Incompatible backend = block launch.
+- Candidate profiles are never auto-enabled.
+- Profile evolution requires user approval.
+
+Branch strategy
+---------------
+Use small, reviewable branches. Main must stay buildable.
+
+Required branch order:
+1. chore/fork-guardrails
+2. ci/foundation-pipeline
+3. feat/runtime-profile-foundation
+4. feat/llama-vulkan-runtime
+5. feat/hermes-runtime-orchestration
+6. feat/discord-remote-control
+7. feat/about-runtime-workflows
+8. docs/todo-context-refresh
+
+Merge discipline:
+- Rebase each branch onto latest green main.
+- Prefer rebase-and-merge so commit messages remain meaningful.
+- No direct feature work on main.
+- No force push to main.
+- No giant catch-all commits.
+
+Commit-by-commit roadmap
 ------------------------
-Windows 11 Desktop
-  AionUiPro Desktop
-    - Existing app UI
-    - Remote -> Discord settings panel
-    - About page update/runtime controls
-    - Hermes Runtime control panel
-    - Memory/skills promotion queues
-    - Docker lifecycle manager
-    - Discord bridge manager
-  Docker Desktop
-    - hermes-work container
-    - hermes-gemma4-community container
-  Obsidian vaults
-    - private work vault
-    - community bot vault
-  Optional local/cloud model services
-    - Ollama
-    - llama.cpp server
-    - LM Studio
-    - Hugging Face BYOK
-    - NVIDIA NIM BYOK/cloud
-    - OpenRouter BYOK/features
+chore/fork-guardrails:
+1. chore(fork): snapshot repo baseline and lock non-destructive scope
+2. fix(updater): default publish source to HardStyleMoose/AionUiPro
+3. feat(updater): add fork sync settings and dry-run sync service
+4. test(updater): pin fork defaults and upstream overwrite guardrails
 
-Dual Hermes runtime design:
----------------------------
-There must be two separated Hermes runtimes.
+ci/foundation-pipeline:
+5. ci(actions): add bun-based Linux quality workflow
+6. ci(actions): add Windows Electron package smoke build and artifacts
+7. ci(policy): add branch naming and forbidden-file checks
+8. docs(ci): document required status checks for main
 
-1) Hermes Work Agent
-   - Container name: hermes-work
-   - Default host port: 8642 -> container port 8642
-   - Data path: C:\AI\HermesDocker\work-data
-   - Memory scope: private
-   - Skills scope: private
-   - Used by AionUiPro Desktop by default for the user’s private work.
-   - Used by Discord only through owner/admin-only /work commands.
-   - May access project workspaces only when explicitly configured.
-   - File/command execution requires approval.
-   - Should be on-demand by default to save resources.
+feat/runtime-profile-foundation:
+9. feat(runtime): add fine-tune profile schema and migration layer
+10. feat(runtime): add safeStorage-backed profile store
+11. feat(settings): add runtime profile editor for manual and DMR backends
+12. test(runtime): cover profile persistence backend caps and fallback policy
 
-2) Gemma4 Community Discord Chatbot
-   - Container name: hermes-gemma4-community
-   - Default host port: 8643 -> container port 8642
-   - Data path: C:\AI\HermesDocker\gemma4-community-data
-   - Memory scope: community only
-   - Skills scope: community only
-   - Used by public Discord /ask commands and public mentions.
-   - Must never access private work memory.
-   - Must never access private Obsidian work vault.
-   - Must never access private repo mounts.
-   - Must never access host execution tools by default.
-   - May self-improve by creating community skill candidates, but those candidates must be reviewed before promotion.
-   - Should be the always-on runtime if Discord community bot is enabled.
+feat/llama-vulkan-runtime:
+13. feat(llama): add Windows Vulkan diagnostics service
+14. feat(llama): add PowerShell Vulkan launcher and state file contract
+15. feat(llama): add Node launcher for manual-vulkan backend
+16. feat(dmr): add optional Docker Model Runner adapter without global tune mutation
+17. test(llama): cover Vulkan parsing smoke launch and DMR profile selection
 
-Memory isolation rules:
------------------------
-- Work memory and community memory are separate.
-- Work skills and community skills are separate.
-- Community learned memories cannot automatically enter the work agent.
-- Community learned skills cannot automatically enter the work agent.
-- Promotion requires explicit owner approval.
-- Promotion flow supports: approve, reject, redact then approve, keep community-only.
-- Obsidian is for safe human-readable notes, playbooks, and memory summaries, not secrets.
-- Secrets are stored in encrypted app storage or OS-safe storage, not Obsidian and not Git.
+feat/hermes-runtime-orchestration:
+18. feat(hermes): add isolated compose template for work and community runtimes
+19. feat(hermes): add safe compose generator and path sanitizer
+20. feat(hermes): add docker lifecycle manager and health probes
+21. test(hermes): cover compose rendering path safety and health fallback
 
-Default host paths:
--------------------
-Base path:
-  C:\AI\HermesDocker\
+feat/discord-remote-control:
+22. feat(remote): replace Discord placeholder with Telegram-style settings panel
+23. feat(discord): add secure token store command sync and invite helpers
+24. feat(discord): add community and owner runtime routing policies
+25. test(discord): cover redaction authorization and work-route gating
 
-Expected subfolders:
-  C:\AI\HermesDocker\compose\
-  C:\AI\HermesDocker\work-data\
-  C:\AI\HermesDocker\gemma4-community-data\
-  C:\AI\HermesDocker\work-obsidian\
-  C:\AI\HermesDocker\community-obsidian\
+feat/about-runtime-workflows:
+26. feat(about): add fork sync start-all and save-exit controls
+27. feat(runtime): add unified runtime status dashboard for Hermes llama and Discord
+28. feat(runtime): add start-everything workflow service and script
+29. feat(runtime): add save-and-exit workflow service tests and quit contract
 
-These must be configurable in UI, but those defaults should be used.
+docs/todo-context-refresh:
+30. docs(context): rewrite TodoContext with branch ci runtime and security contracts
+31. docs(runbook): add Windows Vulkan and Hermes operator setup notes
 
-Docker compose template to generate:
-------------------------------------
-services:
-  hermes-work:
-    image: nousresearch/hermes-agent:latest
-    container_name: hermes-work
-    restart: "no"
-    profiles: ["work"]
-    volumes:
-      - ../work-data:/opt/data
-      - ${AIONUI_WORK_OBSIDIAN_VAULT:-C:/AI/HermesDocker/work-obsidian}:/opt/obsidian:rw
-    ports:
-      - "8642:8642"
-    environment:
-      HERMES_HOME: /opt/data
-      HERMES_PROFILE: work
-      HERMES_DASHBOARD: "1"
-    command: gateway run
+CI contract
+-----------
+Add .github/workflows/ci.yml with required checks:
+- quality-linux
+- branch-policy
+- package-windows
 
-  hermes-gemma4-community:
-    image: nousresearch/hermes-agent:latest
-    container_name: hermes-gemma4-community
-    restart: unless-stopped
-    profiles: ["community"]
-    volumes:
-      - ../gemma4-community-data:/opt/data
-      - ${AIONUI_COMMUNITY_OBSIDIAN_VAULT:-C:/AI/HermesDocker/community-obsidian}:/opt/obsidian:rw
-    ports:
-      - "8643:8642"
-    environment:
-      HERMES_HOME: /opt/data
-      HERMES_PROFILE: gemma4-community
-      HERMES_DASHBOARD: "1"
-    command: gateway run
+quality-linux must run:
+- bun ci
+- bun run format:check
+- bun run lint
+- bunx tsc --noEmit
+- bun run test
+- bun run package
 
-Important Docker security rule:
-- Do not mount Docker socket by default.
-- Do not mount private workspace or private vault into community container.
-- Do not enable host command execution for community bot.
-- If Docker socket support is ever added later, it must be gated behind scary warnings and owner-only approval.
+package-windows must run:
+- bun ci
+- bun run build-win:x64
+- upload package artifacts
 
-Discord integration requirements:
----------------------------------
-Implement Discord in the existing Remote settings page.
+branch-policy must fail on:
+- invalid branch names
+- .env, .pem, .key, .pfx, id_rsa files
+- package.json changed without bun.lock
+- electron-builder.yml pointing back to iOfficeAI/AionUi
+- obvious hardcoded secrets
 
-Find the existing file(s) that render Settings -> Remote and platform sections. Search terms:
-- Telegram
-- Bot Token
-- Authorized Users
-- Coming Soon
-- Remote
-- DingTalk
-- WeCom
-- Slack
-- Discord
+Branch protection for main:
+- require PR
+- require reviews
+- require conversation resolution
+- require linear history
+- block force pushes and deletion
+- require quality-linux, branch-policy, package-windows
 
-Discord panel must no longer show only Coming Soon. It must expand like Telegram.
+Fork-safe updater
+-----------------
+The app must update from:
+- owner: HardStyleMoose
+- repo: AionUiPro
 
-Discord fields:
-1. Enable toggle
-2. Bot Token
-   - Password input
-   - reveal/hide icon if existing pattern supports it
-   - Test button
-   - never log token
-3. Client ID
-   - used for invite link and slash command sync
-4. Guild / Server ID
-   - optional test guild for fast command registration
-5. Agent selector
-   Options:
-   - Aion CLI
-   - Hermes Work Agent
-   - Gemma4 Community Bot
-   - Custom
-6. Default Model selector
-   - reuse existing model list and selection logic
-   - do not change available models
-7. Activation Mode
-   - off
-   - mention
-   - keyword
-   - auto
-8. Reply Mode
-   - channel
-   - thread
-   - dm
-   - ephemeral
-9. Authorized Users
-   - match Telegram style
-   - show Discord username/display name if available
-   - show platform: discord
-   - show authorization timestamp
-   - remove button
-10. Admin Role IDs
-11. Trusted Role IDs
-12. Command controls
-   - Sync Slash Commands
-   - Test Bot
-   - Generate Invite Link
-   - Open Discord Developer Portal
+The app must not update from:
+- iOfficeAI/AionUi
 
-Discord commands to scaffold:
-Public:
-  /ask
-  /help
-  /status
-  /models
-  /new
-  /reset
-  /feedback
-
-Owner/admin:
-  /work
-  /work-status
-  /work-memory
-  /work-skill
-  /work-exec
-  /work-approve
-  /promote-skill
-  /promote-memory
-
-Discord routing rules:
-- /ask routes to Gemma4 Community Bot.
-- Public mentions route to Gemma4 Community Bot.
-- /work routes to Hermes Work Agent.
-- /work is owner/admin only.
-- Normal users must never access Hermes Work Agent.
-- Community bot must never access private work memory, private Obsidian vault, private repo mounts, or host execution tools.
-
-Suggested Discord files:
-------------------------
-src/plugins/discord/
-  DiscordService.ts
-  DiscordSettingsService.ts
-  DiscordCommandRegistry.ts
-  DiscordSlashCommandSync.ts
-  DiscordPermissionService.ts
-  DiscordRuntimeRouter.ts
-  DiscordTokenRedactor.ts
-  DiscordTypes.ts
-
-If the repo does not already have discord.js, add it carefully to the package manager used by the repo. Check whether this app uses bun.lock, npm, pnpm, or another workflow before editing lockfiles.
-
-Hermes integration files:
--------------------------
-src/plugins/hermes/
-  HermesTypes.ts
-
-src/plugins/hermes/docker/
-  HermesDockerService.ts
-  HermesComposeService.ts
-  DockerCommandBuilder.ts
-  DockerLogRedactor.ts
-  DockerHealthService.ts
-
-src/plugins/hermes/client/
-  HermesGatewayClient.ts
-  HermesRuntimeClient.ts
-
-src/plugins/hermes/profiles/
-  HermesProfileRegistry.ts
-  WorkHermesProfile.ts
-  Gemma4CommunityProfile.ts
-
-src/plugins/hermes/memory/
-  MemoryBoundaryService.ts
-  MemoryPromotionService.ts
-  ObsidianVaultService.ts
-
-src/plugins/hermes/skills/
-  SkillRegistryService.ts
-  SkillPromotionService.ts
-  SkillCandidateService.ts
-
-src/plugins/hermes/security/
-  SecretRedactor.ts
-  ToolPermissionPolicy.ts
-  FilesystemMountPolicy.ts
-
-Suggested renderer pages/panels:
---------------------------------
-src/renderer/pages/HermesRuntime/
-  HermesRuntimePage.tsx
-  RuntimeOverviewPanel.tsx
-  WorkAgentPanel.tsx
-  Gemma4CommunityPanel.tsx
-  DiscordGatewayPanel.tsx
-  MemoryBoundaryPanel.tsx
-  SkillPromotionPanel.tsx
-  DockerLogsPanel.tsx
-  SecurityPolicyPanel.tsx
-
-Suggested shared types:
------------------------
-src/shared/hermes/
-  hermesProfiles.ts
-  hermesRuntimeState.ts
-  discordRouting.ts
-  memoryBoundary.ts
-  skillPromotion.ts
-
-About page requirements:
-------------------------
-The About page currently has Check for updates and Include prerelease/dev builds.
-Add these controls near the update card:
+About page additions:
+- Update source indicator: HardStyleMoose/AionUiPro
 - Sync My GitHub Fork
 - Start Everything
 - Save & Exit All
-- Update source indicator
+- Runtime status summary
 
-Update source must be the user’s fork:
-  owner: HardStyleMoose
-  repo: AionUiPro
+Sync My GitHub Fork rules:
+- dry-run first
+- conflict-aware
+- no force push
+- no reset
+- no overwrite of custom/plugin folders
+- if conflicts exist, stop and show instructions
 
-The app must not update from:
-  iOfficeAI/AionUi
+Discord implementation
+----------------------
+Implement Discord in the existing Settings -> Remote -> Discord accordion/panel. Do not leave Discord as Coming Soon. Do not make the final implementation a disconnected settings page.
 
-Update/fork strategy:
-- Do not let auto-updater overwrite custom code.
-- Build/release from HardStyleMoose/AionUiPro.
-- Existing upstream sync should be safe and conflict-aware.
-- Sync My GitHub Fork should never force-push, never reset local changes, and never blindly overwrite plugin/custom folders.
-- If conflicts exist, stop and show instructions.
-- Show active update source in UI.
+Mirror Telegram’s UI style:
+- enable toggle
+- bot token password input
+- reveal/hide if existing pattern supports it
+- Test button
+- agent selector
+- default model selector
+- authorized users list
+- refresh users
+- remove user
 
-Implementation notes for fork-safe updater:
-- Search files for electron-builder publish config and manual updater logic.
-- If electron-builder.yml points to iOfficeAI/AionUi, change or make configurable for HardStyleMoose/AionUiPro.
-- If there is a manualUpdateService with hardcoded upstream owner/repo or CDN rewrite, make it fork-aware.
-- Suggested setting: updateSourceMode = fork | upstream | custom.
-- Default for this fork must be fork.
-- Default owner/repo must be HardStyleMoose/AionUiPro.
+Discord-specific fields:
+- Bot Token
+- Client ID
+- Guild / Server ID
+- Activation Mode: off | mention | keyword | auto
+- Reply Mode: channel | thread | dm | ephemeral
+- Admin Role IDs
+- Trusted Role IDs
+- Sync Slash Commands
+- Generate Invite Link
+- Open Discord Developer Portal
 
-Start Everything workflow:
+Discord commands:
+Public/community:
+- /ask
+- /help
+- /status
+- /models
+- /new
+- /reset
+- /feedback
+
+Owner/admin:
+- /work
+- /work-status
+- /work-memory
+- /work-skill
+- /work-exec
+- /work-approve
+- /promote-skill
+- /promote-memory
+
+Routing rules:
+- /ask -> Gemma4 Community Bot
+- public mentions -> Gemma4 Community Bot
+- /work* -> Hermes Work Agent
+- /work* is owner/admin only
+- normal users must never reach Hermes Work Agent
+
+Suggested Discord modules:
+- src/process/services/discord/DiscordService.ts
+- src/process/services/discord/DiscordSettingsService.ts
+- src/process/services/discord/DiscordSlashCommandSync.ts
+- src/process/services/discord/DiscordPermissionService.ts
+- src/process/services/discord/DiscordRuntimeRouter.ts
+- src/process/services/discord/DiscordTokenRedactor.ts
+- src/process/services/discord/DiscordInviteLinkService.ts
+- src/shared/discord/discordTypes.ts
+- src/renderer/src/pages/settings/remote/DiscordPlatformPanel.tsx
+
+Hermes Docker runtime
+---------------------
+Two separated containers only:
+
+1. hermes-work
+- host port 8642 -> container 8642
+- data path C:\AI\HermesDocker\work-data
+- vault path C:\AI\HermesDocker\work-obsidian
+- private memory
+- private skills
+- on-demand by default
+- may access project folders only when explicitly configured
+
+2. hermes-gemma4-community
+- host port 8643 -> container 8642
+- data path C:\AI\HermesDocker\gemma4-community-data
+- vault path C:\AI\HermesDocker\community-obsidian
+- community memory only
+- community skills only
+- always-on when Discord is enabled
+- no private mounts
+- no host execution by default
+
+Default base path:
+- C:\AI\HermesDocker
+
+Expected subfolders:
+- compose
+- work-data
+- gemma4-community-data
+- work-obsidian
+- community-obsidian
+
+Docker security rules:
+- do not mount Docker socket by default
+- do not mount private workspace into community container
+- do not mount private vault into community container
+- do not enable host command execution for community bot
+- generated compose must not overwrite hand-written compose unless explicit force mode is used
+
+Suggested Hermes modules:
+- src/process/services/hermes/HermesComposeGenerator.ts
+- src/process/services/hermes/HermesDockerService.ts
+- src/process/services/hermes/HermesHealthService.ts
+- src/process/services/hermes/HermesLogRedactor.ts
+- src/process/services/hermes/HermesRuntimeRegistry.ts
+- deploy/docker/docker-compose.hermes.yml.template
+- scripts/generate-hermes-compose.mjs
+
+Vulkan detection implementation
+-------------------------------
+The owner manual Vulkan profile must validate before launch.
+
+Validation checklist:
+1. Windows platform check.
+2. GPU inventory from Win32_VideoController.
+3. Vulkan runtime via vulkaninfo.exe or vulkaninfoSDK.exe.
+4. Vulkan physical device enumeration.
+5. llama-server.exe exists.
+6. llama-cli.exe smoke test if available.
+7. GGUF model path exists.
+8. Profile backend is manual-vulkan.
+9. If any required step fails, block launch.
+
+Required error messages:
+- VULKAN_RUNTIME_MISSING: Vulkan is required by this tune profile, but the Windows Vulkan runtime was not detected.
+- VULKAN_DEVICE_NOT_FOUND: A Vulkan runtime exists, but no usable Vulkan physical device was reported.
+- LLAMA_VULKAN_BINARY_MISSING: No Vulkan-capable llama.cpp server binary was found.
+- LLAMA_VULKAN_SMOKETEST_FAILED: The configured llama.cpp binary exists, but the Vulkan smoke test did not initialize the Vulkan backend.
+- DMR_WINDOWS_NOT_VULKAN: Docker Model Runner is available, but on Windows it cannot satisfy this Vulkan-pinned profile.
+- PROFILE_FALLBACK_BLOCKED: Automatic fallback is disabled for this owner profile.
+
+Suggested llama modules:
+- src/process/services/llama/VulkanDetectionService.ts
+- src/process/services/llama/LlamaWindowsVulkanLauncher.ts
+- src/process/services/llama/LlamaBackendManager.ts
+- src/process/services/llama/DockerModelRunnerAdapter.ts
+- src/process/services/llama/LlamaStateFiles.ts
+- scripts/llama-vulkan-launch.ps1
+
+Docker Model Runner policy
 --------------------------
-Add an app service/action and scripts.
+Docker Model Runner is optional and profile-selected.
 
-UI action: Start Everything
+Rules:
+- Keep manual Vulkan as owner default.
+- DMR must not replace manual Vulkan on Windows for owner profile.
+- DMR may be used by non-Vulkan or non-owner profiles.
+- DMR profiles keep settings in AionUiPro by default.
+- Do not globally mutate DMR model config unless user explicitly requests it.
+- Probe DMR at localhost:12434/engines/v1/models or the configured endpoint.
+
+Obsidian integration recommendation
+-----------------------------------
+Use AionUiPro as the primary integration and Obsidian as a memory surface.
+
+Recommended architecture:
+- AionUiPro owns runtime control, secrets, profile rules, Discord routing, Docker lifecycle, and memory boundaries.
+- Obsidian stores safe markdown summaries, playbooks, public/community notes, and reviewed skill candidates.
+- The Obsidian Agent Client plugin can be supported as an optional bridge, but it should not become the primary runtime controller.
+
+Why:
+- AionUiPro can enforce secrets, backend rules, and work/community separation.
+- Obsidian plugins are useful for human-readable notes but weaker for process supervision and security boundaries.
+- A plugin bridge is useful for manual agent interaction inside the vault, not for controlling Docker, Discord, or Vulkan launch policy.
+
+Obsidian rules:
+- no secrets in vaults
+- no API keys in markdown
+- separate work and community vaults
+- community notes cannot auto-promote into work memory
+- owner approval required for promotion
+
+OpenRouter optional enhancements
+--------------------------------
+Do not change models. Add optional settings only:
+- separate workspace/API key for work
+- separate workspace/API key for community
+- provider routing preferences
+- response caching toggle for safe repeated diagnostics/tests
+- optional web_search/web_fetch tools
+- ZDR-required mode when privacy matters
+
+Rules:
+- cache is API-key scoped
+- do not share work/community keys
+- do not cache private work prompts unless explicitly enabled
+
+Start Everything
+----------------
+UI action: About -> Start Everything
 Script: scripts/start-everything.ps1
 
-The flow should:
-1. Check Docker CLI availability.
-2. Check Docker Desktop/engine running.
-3. Start Docker Desktop if possible, otherwise show clear instructions.
-4. Generate docker-compose.yml if missing.
-5. Start hermes-gemma4-community.
-6. Optionally start hermes-work depending on setting.
-7. Wait for health checks:
-   - community gateway: http://127.0.0.1:8643
-   - work gateway: http://127.0.0.1:8642
-8. Start Discord bridge if enabled.
-9. Sync slash commands if configured.
-10. Show final status summary in AionUI.
+Flow:
+1. Check Docker CLI.
+2. Check Docker Desktop/engine.
+3. Start Docker Desktop if possible.
+4. Generate compose safely.
+5. Start community runtime if Discord enabled.
+6. Start work runtime if configured.
+7. Validate owner Vulkan profile if configured.
+8. Start owner llama.cpp Vulkan server if configured.
+9. Start Discord bridge if enabled.
+10. Sync slash commands if configured.
+11. Probe health.
+12. Write status JSON for UI.
 
-Save & Exit All workflow:
--------------------------
-Add an app service/action and scripts.
-
-UI action: Save & Exit All
+Save & Exit All
+---------------
+UI action: About -> Save & Exit All
 Script: scripts/save-and-exit-all.ps1
 
-The flow should:
-1. Stop accepting new Discord work.
+Flow:
+1. Stop accepting new Discord jobs.
 2. Flush active sessions.
 3. Save/summarize memory where supported.
 4. Write Obsidian summaries if enabled.
-5. Stop Hermes Work Agent.
-6. Stop Gemma4 Community Bot only if full shutdown is selected; otherwise leave community bot running if configured.
-7. Stop Discord bridge.
-8. Stop local background services.
+5. Stop owner Vulkan llama.cpp process if app-launched.
+6. Stop Hermes Work Agent.
+7. Stop Gemma4 Community Bot unless keep-alive selected.
+8. Stop Discord bridge.
 9. Release app-owned ports.
-10. Call Electron app.quit() directly so close-to-tray behavior does not keep services running.
+10. Call Electron app.quit() from the main process.
 
-Important workflow requirement:
-- The user does not want to manually close ports or kill terminals.
-- The shutdown must be safe, visible, and repeatable.
+Important:
+- never delete Docker volumes during Save & Exit All
+- never require manual port killing
+- shutdown must be repeatable and visible
 
-OpenRouter optional enhancements:
----------------------------------
-Do not change models.
-Add optional settings only:
-- response caching toggle
-- separate workspace/API config for private work
-- separate workspace/API config for community bot
-- provider routing preference: lowest latency, highest throughput, fallback enabled, zero-data-retention required if enabled
-- optional openrouter:web_search
-- optional openrouter:web_fetch
+Security and redaction
+----------------------
+Use Electron safeStorage for tokens/keys where possible.
 
-Use response caching only for safe repeated tasks:
-- diagnostics
-- tests
-- retries
-- repeated context evaluation
-
-Efficiency rules:
------------------
-- Community bot should be always-on when enabled.
-- Work agent should be on-demand by default.
-- Skills should be loaded on demand, not all injected every time.
-- Long sessions should be summarized.
-- Community skill candidates should be reviewed before promotion.
-- Keep prompts lean.
-- Do not change models.
-- Avoid port conflicts by checking ports before starting containers.
-- If port is occupied, report the owning process if possible and give user action buttons.
-
-Security and privacy rules:
----------------------------
-- Never log secrets.
-- Redact Discord bot tokens.
-- Redact OpenAI keys.
-- Redact Hugging Face keys.
-- Redact NVIDIA NIM keys.
-- Redact OpenRouter keys.
-- Redact anything matching *_API_KEY or *_TOKEN.
-- Do not store secrets in Obsidian.
-- Do not store secrets in GitHub.
-- Do not commit .env files.
-- Do not commit Docker data folders.
-- Do not commit Obsidian vault contents unless intentionally documenting safe examples.
-- The repo is public.
-
-Suggested redaction patterns:
-- Discord bot tokens
-- sk-... style API keys
-- hf_... tokens
-- nvapi-... tokens
-- Bearer tokens
+Never log or commit:
+- Discord bot token
+- OpenAI keys
+- Hugging Face tokens
+- NVIDIA NIM keys
+- OpenRouter keys
 - Authorization headers
-- env lines containing KEY, TOKEN, SECRET, PASSWORD, CREDENTIAL
+- *_TOKEN
+- *_KEY
+- *_SECRET
+- PASSWORD=
+- CREDENTIAL=
+- .env files
+- Docker runtime data
+- Obsidian vault contents unless safe examples only
 
-Testing requirements:
----------------------
+Testing requirements
+--------------------
 Add tests for:
+- updater fork source
+- branch-policy guardrails
+- tune profile validation
+- tune profile persistence
+- owner Vulkan fallback blocking
+- Vulkan output parsing
+- manual Vulkan launch arguments
+- DMR adapter compatibility
+- Docker compose generation safety
+- Hermes work/community mount separation
+- Hermes health probes
 - Discord token redaction
-- Discord route policy
-- public /ask routes to community runtime
-- owner /work routes to work runtime
+- Discord /ask routing
+- Discord /work permission gating
 - normal user /work denied
-- DockerCommandBuilder
-- DockerLogRedactor
-- DockerHealthService where practical
 - MemoryBoundaryService
 - SkillPromotionService
-- FilesystemMountPolicy
-- Fork update config points to HardStyleMoose/AionUiPro
-- Save & Exit All calls graceful shutdown flow
-- App boots when Docker is missing
+- Start Everything service
+- Save & Exit All service
+- app boots without Docker
 
-Acceptance criteria:
---------------------
-1. AionUI boots normally.
-2. AionUI boots without Docker installed.
-3. Settings -> Remote -> Discord is no longer just Coming Soon.
-4. Discord panel visually matches Telegram style.
-5. Discord bot token can be saved securely.
-6. Test Bot either works or reports a clear error.
-7. Slash command sync is scaffolded.
-8. /ask routes to Gemma4 community bot.
-9. /work is owner/admin only.
-10. Hermes Work and Gemma4 Community runtimes are visibly separated.
-11. Community bot cannot access private memory or work repo paths.
-12. About page shows Sync My GitHub Fork.
-13. App updater points to HardStyleMoose/AionUiPro, not iOfficeAI/AionUi.
-14. Start Everything starts required services and reports status.
-15. Save & Exit All gracefully stops services and exits.
-16. No secrets are printed or committed.
-17. Tests pass.
-18. Existing AionUI behavior is not broken.
+Acceptance criteria
+-------------------
+- AionUi boots normally.
+- AionUi boots without Docker installed.
+- Settings -> Remote -> Discord is implemented, not Coming Soon only.
+- Discord UI matches Telegram style.
+- Bot token is stored securely and redacted everywhere.
+- /ask routes to Gemma4 Community Bot.
+- /work is owner/admin only.
+- Hermes Work and Gemma4 Community use separate containers, data folders, vaults, and skills.
+- Community bot cannot access private work memory or private mounts.
+- About page shows Sync My GitHub Fork, Start Everything, Save & Exit All, and update source.
+- Updater targets HardStyleMoose/AionUiPro.
+- Owner Vulkan profile blocks on missing Vulkan instead of falling back.
+- Start Everything starts configured services and reports status.
+- Save & Exit All gracefully stops app-owned services without deleting data.
+- CI required checks pass.
+- No secrets are committed.
 
-Recommended implementation phases:
-----------------------------------
-Do not implement everything in one giant risky commit.
+GitHub tracking
+---------------
+Use TODO.md for the repo-level implementation checklist. Keep it updated as tasks are completed. A companion GitHub issue may be used for clickable task checkboxes in the GitHub UI.
 
-Phase 1: Discovery and safe scaffolding
-- Locate existing Remote settings implementation.
-- Locate About page update implementation.
-- Locate update config and manual update service.
-- Add TodoContext-aware docs or architecture notes if useful.
-- Add type definitions for Discord/Hermes profiles.
-- Add redaction utilities and tests.
-
-Phase 2: Discord Remote UI
-- Implement Discord panel in existing Remote settings.
-- Mirror Telegram UI.
-- Add Discord-specific fields.
-- Add settings persistence.
-- Add token redaction.
-- Add disabled/safe placeholder service methods.
-
-Phase 3: Dual Hermes Docker scaffold
-- Add Hermes runtime profile types.
-- Add DockerCommandBuilder.
-- Add DockerLogRedactor.
-- Add Compose template generator.
-- Add Hermes Runtime UI cards.
-- Add tests.
-
-Phase 4: Docker lifecycle
-- Implement Check Docker.
-- Implement Pull Image.
-- Implement Start/Stop/Restart for both containers.
-- Implement logs viewer.
-- Implement gateway health checks.
-
-Phase 5: Discord bridge
-- Add discord.js if needed.
-- Implement command registry.
-- Implement slash command sync.
-- Implement DiscordRuntimeRouter.
-- Implement permissions.
-- Implement /ask and /work routing policies.
-
-Phase 6: Memory and skill boundaries
-- Implement MemoryBoundaryService.
-- Implement SkillPromotionService.
-- Add review UI for community skill/memory candidates.
-
-Phase 7: About page workflow controls
-- Add Sync My GitHub Fork.
-- Add Start Everything.
-- Add Save & Exit All.
-- Add update source indicator.
-- Add scripts/start-everything.ps1.
-- Add scripts/save-and-exit-all.ps1.
-
-Phase 8: OpenRouter optional enhancements
-- Add optional caching/workspace/provider routing settings.
-- Do not change models.
-
-Phase 9: Full integration tests and build
-- Run lint/typecheck/tests/build.
-- Fix regressions.
-- Verify no secrets committed.
-
-Important local commands user is likely to run:
------------------------------------------------
-Clone and open in Codex:
-  git clone https://github.com/HardStyleMoose/AionUiPro.git
-  cd AionUiPro
-  code .
-
-Create branch:
-  git checkout -b feature/hermes-discord-dual-runtime
-
-Docker setup manual baseline:
-  mkdir C:\AI\HermesDocker
-  mkdir C:\AI\HermesDocker\compose
-  mkdir C:\AI\HermesDocker\work-data
-  mkdir C:\AI\HermesDocker\gemma4-community-data
-  docker pull nousresearch/hermes-agent:latest
-
-Community container start:
-  cd C:\AI\HermesDocker\compose
-  docker compose --profile community up -d
-
-Work container start:
-  cd C:\AI\HermesDocker\compose
-  docker compose --profile work up -d
-
-Logs:
-  docker logs -f hermes-gemma4-community
-  docker logs -f hermes-work
-
-Final note to Codex:
---------------------
-The user wants this to be polished, professional, and stable. Prefer small safe commits, strong tests, and explicit UI status over giant unreviewable rewrites. Keep all existing AionUI functionality working. The Discord implementation belongs under the existing Remote settings section. The fork-safe update controls belong on About. Hermes Docker management must be optional and safe if Docker is missing. The private work runtime and community chatbot runtime must remain separated at all times.
+Final instruction to Codex
+--------------------------
+Prefer additive modules over rewrites. Keep every PR reviewable. If live paths differ from this document, preserve existing structure and map new leaf modules into the current repo layout. When uncertain, choose the path that changes fewer files and preserves current behavior.
