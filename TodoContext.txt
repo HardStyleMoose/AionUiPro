@@ -35,6 +35,30 @@ Non-negotiable constraints
 - Do not mount private work paths into community runtimes.
 - Do not commit secrets or generated runtime data.
 
+Personal Discord bot boundary
+-----------------------------
+The maintainer has a personal Discord bot that is for private use. Do NOT add the personal bot instance, token, IDs, private server configuration, or runtime data to this public repository.
+
+What the repo should contain:
+- Generic Discord integration code.
+- Generic Discord setup UI under Settings -> Remote -> Discord.
+- Documentation telling users to bring/configure their own Discord bot token locally.
+- Secure local storage paths for tokens.
+- Redaction, validation, and safe setup helpers.
+
+What the repo must never contain:
+- Maintainer personal Discord bot token.
+- Maintainer personal client ID if treated as private configuration.
+- Maintainer private guild/server IDs.
+- Maintainer private channel IDs.
+- Maintainer private user IDs or role IDs.
+- Any .env or local Discord config file.
+
+User-facing behavior:
+- Other users can create and connect their own Discord bot through the app.
+- The maintainer can use their personal bot locally by entering credentials into encrypted local app storage.
+- The public repo stays reusable and safe.
+
 Owner machine rule
 ------------------
 Owner profile is Windows + RTX 2060 Super 8 GB. The owner default llama.cpp backend must be manual Vulkan, not CUDA.
